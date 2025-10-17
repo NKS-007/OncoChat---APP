@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OncoChat AI - Cancer Care Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f5;
+        }
+
+        /* Navigation Bar */
+        .navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 15px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .navbar-links {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .navbar-links a {
+            color: white;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s;
+            padding: 8px 16px;
+            border-radius: 5px;
+        }
+
+        .navbar-links a:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .navbar-links a.active {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Pages */
+        .page {
+            display: none;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        /* Home Page */
+        .hero-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 100px 50px;
+            text-align: center;
+        }
+
+        .hero-section h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .hero-section p {
+            font-size: 20px;
+            margin-bottom: 40px;
+            opacity: 0.95;
+        }
+
+        .hero-btn {
+            background: white;
+            color: #667eea;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 30px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .hero-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Features Section */
+        .features-section {
+            padding: 80px 50px;
+            background: white;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 36px;
+            color: #333;
+            margin-bottom: 50px;
+            font-weight: 700;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s;
+            border-top: 4px solid #667eea;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .feature-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+
+        .feature-card h3 {
+            color: #333;
+            font-size: 22px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .feature-card p {
+            color: #666;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        /* About Section */
+        .about-section {
+            padding: 80px 50px;
+            background: #f8f9fa;
+        }
+
+        .about-content {
+            max-width: 900px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .about-content h2 {
+            font-size: 36px;
+            color: #333;
+            margin-bottom: 30px;
+            font-weight: 700;
+        }
+
+        .about-content p {
+            font-size: 18px;
+            color: #555;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+
+        /* Chat Page */
+        .chat-container {
+            max-width: 1200px;
+            margin: 30px auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            height: calc(100vh - 180px);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+            background: #fafafa;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+            font-size: 14px;
+        }
+
+        .message.bot .message-avatar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .message.user .message-avatar {
+            background: #e0e0e0;
+            color: #555;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 15px 20px;
+            border-radius: 18px;
+            line-height: 1.6;
+            font-size: 15px;
+        }
+
+        .message.bot .message-content {
+            background: white;
+            color: #333;
+            border: 1px solid #e0e0e0;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .chat-input-container {
+            padding: 20px 30px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .quick-prompts {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        .quick-prompt-btn {
+            background: #f0f2ff;
+            color: #667eea;
+            border: 1px solid #667eea;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .quick-prompt-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 15px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .chat-input:focus {
+            border-color: #667eea;
+        }
+
+        .send-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 35px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 5px;
+            padding: 15px 20px;
+            background: white;
+            border-radius: 18px;
+            width: fit-content;
+            border: 1px solid #e0e0e0;
+        }
+
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #667eea;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+
+        /* Diagnosis Page */
+        .diagnosis-container {
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 40px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .page-title {
+            font-size: 32px;
+            color: #333;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .page-subtitle {
+            font-size: 16px;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 15px;
+            padding: 60px;
+            text-align: center;
+            background: #f8f9ff;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 30px;
+        }
+
+        .upload-area:hover {
+            background: #f0f2ff;
+            border-color: #764ba2;
+        }
+
+        .upload-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .upload-text {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .upload-subtext {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .analyze-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .analyze-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Settings Page */
+        .settings-container {
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 40px;
+        }
+
+        .settings-card {
+            background: white;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .settings-card h3 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .settings-card p {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 15px;
+            transition: all 0.3s;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .save-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .save-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .info-text {
+            font-size: 13px;
+            color: #999;
+            margin-top: 15px;
+        }
+
+        .info-text a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        /* Footer */
+        .footer {
+            background: #333;
+            color: white;
+            text-align: center;
+            padding: 30px;
+            margin-top: 50px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .navbar {
+                padding: 15px 20px;
+            }
+
+            .navbar-links {
+                gap: 15px;
+            }
+
+            .navbar-links a {
+                font-size: 14px;
+            }
+
+            .hero-section h1 {
+                font-size: 32px;
+            }
+
+            .hero-section p {
+                font-size: 16px;
+            }
+
+            .features-section,
+            .about-section {
+                padding: 40px 20px;
+            }
+
+            .message-content {
+                max-width: 85%;
+            }
+
+            .chat-container {
+                margin: 15px;
+                height: calc(100vh - 150px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="navbar-brand">
+            🩺 OncoChat AI
+        </div>
+        <div class="navbar-links">
+            <a href="#" class="nav-link active" onclick="showPage('home')">Home</a>
+            <a href="#" class="nav-link" onclick="showPage('chat')">Chat</a>
+            <a href="#" class="nav-link" onclick="showPage('diagnosis')">Diagnosis</a>
+            <a href="#" class="nav-link" onclick="showPage('about')">About</a>
+        </div>
+    </nav>
+
+    <!-- Home Page -->
+    <div class="page active" id="home-page">
+        <section class="hero-section">
+            <h1>Welcome to OncoChat AI</h1>
+            <p>Your AI-Powered Cancer Care Assistant - Supporting You Every Step of the Way</p>
+            <button class="hero-btn" onclick="showPage('chat')">Start Chatting Now</button>
+        </section>
+
+        <section class="features-section">
+            <h2 class="section-title">Our Features</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">💬</div>
+                    <h3>AI Chat Assistant</h3>
+                    <p>Get instant answers to your cancer care questions from our intelligent AI assistant powered by advanced technology.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔬</div>
+                    <h3>Medical Image Analysis</h3>
+                    <p>Upload medical images for AI-powered analysis to help understand potential health concerns.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">💊</div>
+                    <h3>Treatment Information</h3>
+                    <p>Access comprehensive information about various cancer treatments, medications, and therapies.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📚</div>
+                    <h3>Educational Resources</h3>
+                    <p>Learn about cancer prevention, symptoms, and care through our curated educational materials.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">❤️</div>
+                    <h3>Support Network</h3>
+                    <p>Connect with support groups and resources to help you through your cancer care journey.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📅</div>
+                    <h3>Appointment Tracking</h3>
+                    <p>Keep track of your medical appointments, medications, and treatment schedules in one place.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="about-section">
+            <div class="about-content">
+                <h2>About OncoChat AI</h2>
+                <p>OncoChat AI is a compassionate, AI-powered assistant designed to support individuals affected by cancer. We provide reliable information, emotional support, and practical guidance throughout your cancer care journey.</p>
+                <p>Our mission is to make cancer information more accessible and to provide a supportive companion for patients, caregivers, and families navigating the challenges of cancer care.</p>
+            </div>
+        </section>
+    </div>
+
+    <!-- Chat Page -->
+    <div class="page" id="chat-page">
+        <div class="chat-container">
+            <div class="chat-header">
+                💬 Chat with OncoChat AI
+            </div>
+            <div class="chat-messages" id="chat-messages">
+                <div class="message bot">
+                    <div class="message-avatar">AI</div>
+                    <div class="message-content">
+                        Hello! I'm OncoChat AI, your cancer care assistant. I'm here to provide information and support. How can I help you today?
+                    </div>
+                </div>
+            </div>
+            <div class="chat-input-container">
+                <div class="quick-prompts">
+                    <button class="quick-prompt-btn" onclick="sendQuickPrompt('How do I talk to my family about my diagnosis?')">💬 Talk to family</button>
+                    <button class="quick-prompt-btn" onclick="sendQuickPrompt('What are best practices for rest during treatment?')">😴 Best practices for rest</button>
+                    <button class="quick-prompt-btn" onclick="sendQuickPrompt('How can I manage treatment side effects?')">💊 Managing side effects</button>
+                    <button class="quick-prompt-btn" onclick="sendQuickPrompt('What foods should I eat during treatment?')">🥗 Nutrition tips</button>
+                </div>
+                <div class="chat-input-wrapper">
+                    <input 
+                        type="text" 
+                        class="chat-input" 
+                        id="chat-input" 
+                        placeholder="Type your message here..."
+                        onkeypress="handleKeyPress(event)"
+                    >
+                    <button class="send-btn" onclick="sendMessage()">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Diagnosis Page -->
+    <div class="page" id="diagnosis-page">
+        <div class="diagnosis-container">
+            <h1 class="page-title">Medical Image Analysis</h1>
+            <p class="page-subtitle">Upload medical images for AI-powered analysis (Coming Soon)</p>
+            
+            <div class="upload-area" onclick="document.getElementById('file-input').click()">
+                <div class="upload-icon">📤</div>
+                <div class="upload-text">Click to Upload Medical Images</div>
+                <div class="upload-subtext">Supported formats: JPG, PNG, DICOM</div>
+                <input type="file" id="file-input" style="display: none;" accept="image/*" onchange="handleFileUpload(event)">
+            </div>
+            
+            <button class="analyze-btn" onclick="analyzeMedicalImage()">Analyze Image</button>
+            
+            <div id="analysis-result" style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px; display: none;">
+                <h3 style="color: #333; margin-bottom: 15px;">Analysis Result:</h3>
+                <p style="color: #666; line-height: 1.8;">This feature is under development. The ML model for medical image analysis will be integrated soon.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- About Page -->
+    <div class="page" id="about-page">
+        <div class="diagnosis-container">
+            <h1 class="page-title">About OncoChat AI</h1>
+            <p class="page-subtitle">Empowering Cancer Care Through Technology</p>
+            
+            <div style="line-height: 1.8; color: #555;">
+                <h3 style="color: #333; margin: 30px 0 15px 0; font-size: 24px;">Our Mission</h3>
+                <p style="margin-bottom: 20px;">OncoChat AI is dedicated to providing accessible, reliable, and compassionate support for individuals affected by cancer. We leverage artificial intelligence to deliver information and assistance when you need it most.</p>
+                
+                <h3 style="color: #333; margin: 30px 0 15px 0; font-size: 24px;">What We Offer</h3>
+                <p style="margin-bottom: 20px;">Our platform combines cutting-edge AI technology with evidence-based medical information to provide:</p>
+                <ul style="margin-left: 30px; margin-bottom: 20px;">
+                    <li style="margin-bottom: 10px;">24/7 AI-powered chat support</li>
+                    <li style="margin-bottom: 10px;">Medical image analysis capabilities</li>
+                    <li style="margin-bottom: 10px;">Treatment and medication information</li>
+                    <li style="margin-bottom: 10px;">Educational resources and guidance</li>
+                    <li style="margin-bottom: 10px;">Emotional support and encouragement</li>
+                </ul>
+                
+                <h3 style="color: #333; margin: 30px 0 15px 0; font-size: 24px;">Important Note</h3>
+                <p style="margin-bottom: 20px; color: #d9534f; font-weight: 500;">OncoChat AI is designed to provide information and support, but it is not a substitute for professional medical advice, diagnosis, or treatment. Always consult with qualified healthcare professionals for medical decisions.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Page -->
+    <div class="page" id="settings-page">
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2024 OncoChat AI. Supporting Your Cancer Care Journey.</p>
+        <p style="margin-top: 10px; font-size: 14px; opacity: 0.8;">This application is for informational purposes only and is not a substitute for professional medical advice.</p>
+    </footer>
+
+    <script>
+        // DEVELOPER: Add your Gemini API key here
+        let apiKey = 'AIzaSyDiLiSp6sK-PgUTkBdyd0jvSLl6XHw6pgU';
+        
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+
+        // Hardcoded responses for common queries
+        const hardcodedResponses = {
+            'hi': "Hello! 👋 I'm OncoChat AI, your compassionate cancer care companion. I'm here to provide support, answer your questions, and help you navigate your cancer journey. How can I assist you today?",
+            
+            'hello': "Hello! 👋 I'm OncoChat AI, your compassionate cancer care companion. I'm here to provide support, answer your questions, and help you navigate your cancer journey. How can I assist you today?",
+            
+            'hey': "Hey there! 👋 I'm OncoChat AI, your compassionate cancer care companion. I'm here to provide support, answer your questions, and help you navigate your cancer journey. How can I assist you today?",
+            
+            'what are you': "I'm OncoChat AI, an AI-powered cancer care assistant designed to provide emotional support and reliable information. I can help you with:\n\n• Understanding cancer symptoms and treatments\n• Managing side effects\n• Nutrition and lifestyle guidance\n• Emotional support for patients and caregivers\n• Answering questions about oncology care\n\nI'm here to support you, but remember - I'm not a replacement for professional medical advice. Always consult with your healthcare team for medical decisions.",
+            
+            'what can you do': "I'm here to support you in many ways! 💜\n\n✅ Answer questions about cancer types and stages\n✅ Explain treatment options (chemo, radiation, immunotherapy)\n✅ Provide nutrition and lifestyle tips\n✅ Help manage treatment side effects\n✅ Offer emotional support and guidance\n✅ Explain medical terms in simple language\n✅ Support caregivers and family members\n\nFeel free to ask me anything related to cancer care - I'm here to help!",
+            
+            'how do i talk to my family about my diagnosis?': "Talking to your family about a cancer diagnosis can feel overwhelming, but you don't have to face it alone. Here are some compassionate ways to approach this conversation:\n\n💜 **Choose the Right Time and Place**\nFind a quiet, comfortable setting where everyone can sit down without distractions. Make sure you have enough time for questions and emotions.\n\n💬 **Be Honest and Clear**\nShare what you know about your diagnosis in simple terms. It's okay to say \"I don't know yet\" about things you're still learning.\n\n❤️ **Allow Space for Emotions**\nEveryone processes news differently. Some may cry, others may go quiet. Let them feel what they need to feel.\n\n📋 **Share Your Needs**\nTell them how they can support you - whether it's coming to appointments, helping with daily tasks, or just being there to listen.\n\n👨‍👩‍👧‍👦 **Include Them in Your Journey**\nLet them know they're part of your support team. This helps them feel less helpless and more connected.\n\nRemember: You don't have to be strong all the time. It's okay to be vulnerable with the people who love you. Would you like to talk about any specific concerns about having this conversation?",
+            
+            'what are best practices for rest during treatment?': "Rest is crucial during cancer treatment, and your body needs it to heal. Here are evidence-based best practices:\n\n😴 **Listen to Your Body**\nFatigue during treatment is real and valid. Rest when you're tired, even if it means napping during the day.\n\n⏰ **Maintain a Sleep Schedule**\n• Go to bed and wake up at consistent times\n• Aim for 7-9 hours of sleep per night\n• Create a calming bedtime routine\n\n🛏️ **Create a Restful Environment**\n• Keep your bedroom cool, dark, and quiet\n• Use comfortable bedding\n• Remove screens 30 minutes before sleep\n\n⚡ **Balance Rest with Gentle Activity**\nWhile rest is important, light movement (like short walks) can actually improve energy levels and sleep quality.\n\n🍽️ **Time Your Meals Wisely**\nAvoid heavy meals close to bedtime, but don't go to bed hungry either.\n\n💊 **Manage Side Effects**\nPain, nausea, or anxiety can disrupt sleep. Work with your care team to manage these symptoms.\n\n🧘‍♀️ **Try Relaxation Techniques**\n• Deep breathing exercises\n• Gentle meditation\n• Progressive muscle relaxation\n• Guided imagery\n\nRemember: Rest is not laziness - it's healing. Your body is working hard, and quality rest is part of your treatment. Be patient and kind to yourself. 💜",
+            
+            'how can i manage treatment side effects?': "Managing treatment side effects is an important part of your cancer care journey. Here's a comprehensive guide:\n\n💊 **Common Side Effects and Management:**\n\n🤢 **Nausea & Vomiting**\n• Take anti-nausea medications as prescribed\n• Eat small, frequent meals\n• Try ginger tea or peppermint\n• Avoid strong smells and greasy foods\n• Stay hydrated with clear liquids\n\n😴 **Fatigue**\n• Balance rest with light activity\n• Prioritize important tasks for when you have energy\n• Accept help from others\n• Take short naps (20-30 minutes)\n\n🍽️ **Appetite Changes**\n• Eat small portions throughout the day\n• Focus on nutrient-dense foods\n• Try cold or room-temperature foods if hot foods are unappealing\n• Use nutritional supplements if recommended\n\n💇 **Hair Loss**\n• Consider cutting hair short before treatment starts\n• Use gentle, fragrance-free shampoos\n• Protect your scalp from sun and cold\n• Explore wigs, scarves, or hats if desired\n\n🦷 **Mouth Sores**\n• Rinse with salt water or prescribed mouthwash\n• Use a soft toothbrush\n• Avoid spicy, acidic, or rough foods\n• Stay hydrated\n\n🧠 **\"Chemo Brain\" (Cognitive Changes)**\n• Use lists and reminders\n• Keep a consistent routine\n• Do puzzles or brain games\n• Be patient with yourself\n\n⚠️ **When to Contact Your Care Team:**\n• Fever over 100.4°F (38°C)\n• Severe pain\n• Difficulty breathing\n• Uncontrolled vomiting or diarrhea\n• Signs of infection\n\nRemember: Every person's experience is unique. Keep an open dialogue with your healthcare team - they can adjust medications and provide strategies specific to your situation. You're not alone in this! 💜",
+            
+            'what foods should i eat during treatment?': "Nutrition during cancer treatment is vital for healing and maintaining strength. Here's a comprehensive guide:\n\n🥗 **Key Nutritional Priorities:**\n\n💪 **Protein-Rich Foods (For Healing)**\n• Lean meats, fish, and poultry\n• Eggs\n• Greek yogurt and cottage cheese\n• Beans and lentils\n• Nuts and nut butters\n• Tofu and tempeh\n\n🌈 **Fruits & Vegetables (For Nutrients & Antioxidants)**\n• Leafy greens (spinach, kale)\n• Berries (blueberries, strawberries)\n• Cruciferous vegetables (broccoli, cauliflower)\n• Sweet potatoes\n• Citrus fruits\n• Carrots and bell peppers\n\n🌾 **Whole Grains (For Energy)**\n• Brown rice and quinoa\n• Oatmeal\n• Whole wheat bread and pasta\n• Barley\n\n💧 **Hydration is Essential**\n• Aim for 8-10 glasses of water daily\n• Herbal teas\n• Broths and soups\n• Smoothies\n\n🥑 **Healthy Fats**\n• Avocados\n• Olive oil\n• Fatty fish (salmon, mackerel)\n• Nuts and seeds\n\n⚠️ **Foods to Limit or Avoid:**\n• Undercooked meats, eggs, or seafood (infection risk)\n• Unpasteurized dairy products\n• Raw sprouts\n• Excessive sugar and processed foods\n• Alcohol (discuss with your doctor)\n\n💡 **Helpful Tips:**\n• Eat small, frequent meals if large meals are difficult\n• Keep easy-to-eat snacks handy\n• Try cold or room-temperature foods if you're sensitive to smells\n• Use plastic utensils if you have a metallic taste\n• Don't force yourself to eat if you're nauseated\n\n👨‍⚕️ **Work with Professionals:**\nConsider meeting with a registered dietitian who specializes in oncology. They can create a personalized nutrition plan based on your specific treatment and needs.\n\nRemember: Eating well during treatment helps your body heal, maintain strength, and better tolerate treatment. Be gentle with yourself - some days will be harder than others. 💜"
+        };
+
+        function normalizeText(text) {
+            return text.toLowerCase().trim().replace(/[?!.]/g, '');
+        }
+
+        function getHardcodedResponse(message) {
+            const normalized = normalizeText(message);
+            return hardcodedResponses[normalized] || null;
+        }
+
+        function sendQuickPrompt(prompt) {
+            chatInput.value = prompt;
+            sendMessage();
+        }
+        let uploadedFile = null;
+
+        function showPage(pageName) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // Remove active class from all nav links
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // Show selected page
+            document.getElementById(pageName + '-page').classList.add('active');
+            
+            // Add active class to clicked nav link
+            event.target.classList.add('active');
+            
+            // Scroll to top
+            window.scrollTo(0, 0);
+        }
+
+        function saveApiKey() {
+            // Removed - API key is hardcoded
+        }
+
+        function saveProfile() {
+            // Removed - Settings page removed
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        async function sendMessage() {
+            const message = chatInput.value.trim();
+            
+            if (!message) return;
+
+            addUserMessage(message);
+            chatInput.value = '';
+            
+            // Check for hardcoded response first
+            const hardcoded = getHardcodedResponse(message);
+            if (hardcoded) {
+                showTypingIndicator();
+                setTimeout(() => {
+                    hideTypingIndicator();
+                    addBotMessage(hardcoded);
+                }, 1000);
+                return;
+            }
+            
+            if (!apiKey || apiKey === 'YOUR_GEMINI_API_KEY_HERE') {
+                showTypingIndicator();
+                setTimeout(() => {
+                    hideTypingIndicator();
+                    addBotMessage("I apologize, but I'm currently experiencing technical difficulties connecting to my knowledge base. However, I'm here to help! Try asking me about:\n\n• How to talk to family about diagnosis\n• Best practices for rest during treatment\n• Managing side effects\n• Nutrition during treatment\n\nYou can also use the quick prompt buttons below for instant answers!");
+                }, 1000);
+                return;
+            }
+            
+            showTypingIndicator();
+            
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: `You are OncoChat AI, a compassionate and specialized cancer care assistant. Your role is to provide emotional support, reliable information, and guidance ONLY about topics related to:
+- Cancer (all types, stages, and aspects)
+- Oncology and cancer treatments
+- Cancer symptoms and diagnosis
+- Chemotherapy, radiation, immunotherapy, and other cancer therapies
+- Cancer prevention and screening
+- Nutrition and lifestyle for cancer patients
+- Emotional and mental health support for cancer patients and caregivers
+- Side effects management
+- Survivorship and recovery
+- Palliative and supportive care
+- General health advice related to cancer care
+
+IMPORTANT GUIDELINES:
+1. Always be empathetic, warm, and supportive in your responses
+2. Use clear, understandable language while being informative
+3. Acknowledge the emotional difficulty of cancer-related concerns
+4. Always remind users that you provide information but are not a substitute for professional medical advice
+5. If asked about topics OUTSIDE of cancer, oncology, and health (like astronomy, sports, entertainment, general knowledge, etc.), politely redirect by saying something like:
+   "I appreciate your question, but I'm specifically designed to help with cancer care and health-related topics. I'm here to support you with questions about cancer, treatments, symptoms, or general health concerns. Is there anything related to cancer care or health that I can help you with today?"
+
+6. Be conversational and kind when redirecting off-topic questions
+7. Provide hope and encouragement while being realistic
+8. Break down complex medical information into digestible parts
+
+User's message: ${message}
+
+Please respond in a caring, professional manner.`
+                            }]
+                        }],
+                        generationConfig: {
+                            temperature: 0.7,
+                            topK: 40,
+                            topP: 0.95,
+                            maxOutputTokens: 1024,
+                        }
+                    })
+                });
+
+                const data = await response.json();
+                hideTypingIndicator();
+                
+                if (data.candidates && data.candidates[0].content) {
+                    const botReply = data.candidates[0].content.parts[0].text;
+                    addBotMessage(botReply);
+                } else {
+                    addBotMessage("I apologize, but I'm having trouble processing your request. Please try again.");
+                }
+            } catch (error) {
+                hideTypingIndicator();
+                addBotMessage("I'm sorry, there was an error connecting to the AI service. Please check your API key and internet connection.");
+                console.error('Error:', error);
+            }
+        }
+
+        function addUserMessage(message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message user';
+            messageDiv.innerHTML = `
+                <div class="message-avatar">U</div>
+                <div class="message-content">${escapeHtml(message)}</div>
+            `;
+            chatMessages.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        function addBotMessage(message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message bot';
+            messageDiv.innerHTML = `
+                <div class="message-avatar">AI</div>
+                <div class="message-content">${escapeHtml(message)}</div>
+            `;
+            chatMessages.appendChild(messageDiv);
+            scrollToBottom();
+        }
+
+        function showTypingIndicator() {
+            const indicator = document.createElement('div');
+            indicator.className = 'message bot';
+            indicator.id = 'typing-indicator';
+            indicator.innerHTML = `
+                <div class="message-avatar">AI</div>
+                <div class="typing-indicator">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            `;
+            chatMessages.appendChild(indicator);
+            scrollToBottom();
+        }
+
+        function hideTypingIndicator() {
+            const indicator = document.getElementById('typing-indicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                uploadedFile = file;
+                alert(`✓ File "${file.name}" uploaded successfully!`);
+            }
+        }
+
+        function analyzeMedicalImage() {
+            const resultDiv = document.getElementById('analysis-result');
+            if (uploadedFile) {
+                resultDiv.style.display = 'block';
+                alert('📊 Analysis feature is under development. The ML model will be integrated soon!');
+            } else {
+                alert('⚠ Please upload an image first!');
+            }
+        }
+
+        // Check API key on load
+        window.addEventListener('load', () => {
+            if (apiKey && apiKey !== 'YOUR_GEMINI_API_KEY_HERE') {
+                console.log('✓ API Key is configured');
+            } else {
+                console.warn('⚠ Developer: Please add your Gemini API key in the code');
+            }
+        });
+    </script>
+</body>
+</html>
