@@ -60,32 +60,99 @@ router.post('/chat', async (req, res) => {
       });
     }
 
-    // Try to use Gemini with fallback
-    try {
-      // We'll update this once we know the correct model name
-      const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-      
-      const prompt = `As a cancer care assistant, provide a helpful response to: ${message}`;
-      
-      console.log('🤖 Calling Gemini API...');
-      const result = await model.generateContent(prompt);
-      const response = await result.response;
-      const reply = response.text();
+    // Try to use Gemini with multiple model fallbacks
+    // gemini-2.0-flash is confirmed working
+    const modelsToTry = [
+      'gemini-2.0-flash',
+      'gemini-1.5-flash',
+      'gemini-1.5-pro',
+      'gemini-pro'
+    ];
 
-      console.log('✅ Gemini response received!');
-      return res.json({ reply });
-      
-    } catch (geminiError) {
-      console.log('❌ Gemini failed, using fallback response');
-      return res.json({ 
-        reply: `I understand you're asking about "${message}". While I'm setting up my advanced AI capabilities, I can help with common cancer care topics like discussing diagnosis with family, rest during treatment, managing side effects, and nutrition. Could you try one of those topics, or use the quick prompts above? 💜`
-      });
+    let lastError = null;
+
+    for (const modelName of modelsToTry) {
+      try {
+        console.log(`🤖 Trying model: ${modelName}...`);
+        
+        const model = genAI.getGenerativeModel({ 
+          model: modelName,
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 1024,
+          }
+        });
+        
+        const systemPrompt = `You are OncoChat AI, a specialized cancer care support assistant. Your role is to provide accurate, compassionate, and evidence-based information exclusively about cancer and related health topics.
+
+**SCOPE - You ONLY discuss:**
+- Cancer types, stages, and diagnosis
+- Cancer treatments (chemotherapy, radiation, immunotherapy, surgery, targeted therapy)
+- Side effects management and supportive care
+- Nutrition and lifestyle during cancer treatment
+- Mental health and emotional support for patients and caregivers
+- Medical terminology explanations related to oncology
+- General health topics directly related to cancer care
+- Resources and support systems for cancer patients
+
+**STRICT BOUNDARIES - You DO NOT discuss:**
+- Non-cancer medical conditions (unless directly related to cancer care)
+- Non-medical topics (politics, entertainment, general conversation, etc.)
+- Financial or legal advice
+- Specific medical diagnoses or treatment recommendations
+- Alternative therapies that lack scientific evidence
+
+**YOUR COMMUNICATION STYLE:**
+- Professional yet warm and empathetic
+- Use clear, jargon-free language (explain medical terms when used)
+- Be concise but thorough
+- Show compassion while maintaining medical accuracy
+- Always encourage consultation with healthcare professionals for personalized advice
+
+**CRITICAL DISCLAIMERS:**
+- Always remind users that you are not a replacement for professional medical advice
+- For urgent symptoms or emergencies, direct users to seek immediate medical attention
+- Encourage users to discuss all treatment decisions with their oncology team
+
+**If asked about non-cancer/non-medical topics:**
+Politely redirect: "I'm specifically designed to assist with cancer care and related health topics. For questions about [topic], I'd recommend seeking appropriate resources. Is there anything related to cancer care I can help you with?"
+
+**User's question:** ${message}
+
+Provide a helpful, accurate, and compassionate response within your scope.`;
+        
+        const result = await model.generateContent(systemPrompt);
+        const response = await result.response;
+        const reply = response.text();
+
+        console.log(`✅ Success with model: ${modelName}`);
+        return res.json({ reply });
+        
+      } catch (modelError) {
+        console.log(`❌ Model ${modelName} failed:`, modelError.message);
+        lastError = modelError;
+        continue; // Try next model
+      }
     }
+
+    // If all models failed, use fallback
+    console.log('❌ All Gemini models failed, using fallback');
+    console.error('Last error:', lastError?.message);
+    
+    return res.json({ 
+      reply: `I understand you're asking about "${message}". While I'm experiencing some technical difficulties with my AI capabilities right now, I can help with common cancer care topics like:\n\n• Discussing diagnosis with family\n• Rest during treatment\n• Managing side effects\n• Nutrition during treatment\n\nPlease try the quick prompts above or ask about these topics! 💜`
+    });
     
   } catch (error) {
-    console.error('❌ General error:', error.message);
+    console.error('❌ General error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      status: error.status,
+      statusText: error.statusText
+    });
+    
     res.json({ 
-      reply: "I'm having some technical difficulties right now. Please try one of the quick prompt buttons or ask about common cancer care topics like nutrition, rest, or talking with family."
+      reply: "I'm having some technical difficulties right now. Please try one of the quick prompt buttons or ask about common cancer care topics like nutrition, rest, or talking with family. 💜"
     });
   }
 });
@@ -97,6 +164,53 @@ router.get('/health', (req, res) => {
     gemini_configured: !!process.env.GEMINI_API_KEY,
     timestamp: new Date().toISOString()
   });
+});
+
+// Test endpoint to verify model access
+router.get('/test-models', async (req, res) => {
+  try {
+    if (!process.env.GEMINI_API_KEY) {
+      return res.json({ error: 'No API key configured' });
+    }
+
+    const modelsToTest = [
+      'gemini-2.0-flash',
+      'gemini-1.5-flash',
+      'gemini-1.5-pro'
+    ];
+
+    const results = [];
+
+    for (const modelName of modelsToTest) {
+      try {
+        console.log(`Testing model: ${modelName}...`);
+        const model = genAI.getGenerativeModel({ model: modelName });
+        const result = await model.generateContent('Say "Hello"');
+        const response = await result.response;
+        
+        results.push({
+          model: modelName,
+          status: 'success',
+          response: response.text()
+        });
+        
+        // If we found a working model, break
+        console.log(`✅ SUCCESS! Model ${modelName} works!`);
+        break;
+      } catch (error) {
+        console.log(`❌ Model ${modelName} failed: ${error.message}`);
+        results.push({
+          model: modelName,
+          status: 'failed',
+          error: error.message
+        });
+      }
+    }
+
+    res.json({ results });
+  } catch (error) {
+    res.json({ error: error.message });
+  }
 });
 
 module.exports = router;

@@ -594,171 +594,171 @@
 
 
     <script>
-    // DOM Elements - will be initialized when DOM loads
-    let chatMessages = null;
-    let chatInput = null;
-    let uploadedFile = null;
+        // DOM Elements - will be initialized when DOM loads
+        let chatMessages = null;
+        let chatInput = null;
+        let uploadedFile = null;
 
-    // Initialize DOM elements when page loads
-    function initializeElements() {
-        chatMessages = document.getElementById('chat-messages');
-        chatInput = document.getElementById('chat-input');
-        
-        if (!chatInput) {
-            console.error('chat-input element not found!');
-        }
-        if (!chatMessages) {
-            console.error('chat-messages element not found!');
-        }
-    }
+        // Initialize DOM elements when page loads
+        function initializeElements() {
+            chatMessages = document.getElementById('chat-messages');
+            chatInput = document.getElementById('chat-input');
 
-    // Page Navigation
-    function showPage(pageName) {
-        // Hide all pages
-        document.querySelectorAll('.page').forEach(page => {
-            page.classList.remove('active');
-        });
-        
-        // Remove active class from all nav links
-        document.querySelectorAll('.nav-link').forEach(link => {
-            link.classList.remove('active');
-        });
-        
-        // Show selected page
-        document.getElementById(pageName + '-page').classList.add('active');
-        
-        // Add active class to clicked nav link
-        event.target.classList.add('active');
-        
-        // Scroll to top
-        window.scrollTo(0, 0);
-        
-        // Re-initialize elements when switching to chat page
-        if (pageName === 'chat') {
-            setTimeout(initializeElements, 100);
+            if (!chatInput) {
+                console.error('chat-input element not found!');
+            }
+            if (!chatMessages) {
+                console.error('chat-messages element not found!');
+            }
         }
-    }
 
-    // Quick Prompts - WITH SAFETY CHECK
-    function sendQuickPrompt(prompt) {
-        // Ensure chatInput is available
-        if (!chatInput) {
-            initializeElements();
-        }
-        
-        if (chatInput) {
-            chatInput.value = prompt;
-            sendMessage();
-        } else {
-            console.error('Chat input not available');
-            // Fallback: direct message send
-            sendMessageDirect(prompt);
-        }
-    }
-
-    // Fallback function if chatInput is still null
-    function sendMessageDirect(message) {
-        if (!chatMessages) {
-            initializeElements();
-        }
-        
-        addUserMessage(message);
-        showTypingIndicator();
-
-        setTimeout(() => {
-            hideTypingIndicator();
-            addBotMessage(`I received: "${message}". Chat system initializing...`);
-        }, 1000);
-    }
-
-    // Keyboard Support
-    function handleKeyPress(event) {
-        if (event.key === 'Enter') {
-            sendMessage();
-        }
-    }
-
-    // Chat Functions
-    async function sendMessage() {
-        // Ensure elements are available
-        if (!chatInput || !chatMessages) {
-            initializeElements();
-        }
-        
-        const message = chatInput ? chatInput.value.trim() : '';
-        if (!message) return;
-
-        addUserMessage(message);
-        if (chatInput) {
-            chatInput.value = '';
-        }
-        showTypingIndicator();
-
-        try {
-            const response = await fetch('/api/chat', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ message })
+        // Page Navigation
+        function showPage(pageName) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
             });
 
-            const data = await response.json();
-            hideTypingIndicator();
-            
-            if (data.reply) {
-                addBotMessage(data.reply);
-            } else {
-                addBotMessage("I apologize, but I'm having trouble processing your request. Please try again.");
-            }
-        } catch (error) {
-            hideTypingIndicator();
-            // Mock response for testing since backend isn't set up
-            addBotMessage(`I received your message: "${message}". Backend connection not available - this is a mock response.`);
-            console.error('Error:', error);
-        }
-    }
+            // Remove active class from all nav links
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
 
-    // UI Helper Functions
-    function addUserMessage(message) {
-        if (!chatMessages) {
-            console.error('chat-messages not available');
-            return;
+            // Show selected page
+            document.getElementById(pageName + '-page').classList.add('active');
+
+            // Add active class to clicked nav link
+            event.target.classList.add('active');
+
+            // Scroll to top
+            window.scrollTo(0, 0);
+
+            // Re-initialize elements when switching to chat page
+            if (pageName === 'chat') {
+                setTimeout(initializeElements, 100);
+            }
         }
-        
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'message user';
-        messageDiv.innerHTML = `
+
+        // Quick Prompts - WITH SAFETY CHECK
+        function sendQuickPrompt(prompt) {
+            // Ensure chatInput is available
+            if (!chatInput) {
+                initializeElements();
+            }
+
+            if (chatInput) {
+                chatInput.value = prompt;
+                sendMessage();
+            } else {
+                console.error('Chat input not available');
+                // Fallback: direct message send
+                sendMessageDirect(prompt);
+            }
+        }
+
+        // Fallback function if chatInput is still null
+        function sendMessageDirect(message) {
+            if (!chatMessages) {
+                initializeElements();
+            }
+
+            addUserMessage(message);
+            showTypingIndicator();
+
+            setTimeout(() => {
+                hideTypingIndicator();
+                addBotMessage(`I received: "${message}". Chat system initializing...`);
+            }, 1000);
+        }
+
+        // Keyboard Support
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        // Chat Functions
+        async function sendMessage() {
+            // Ensure elements are available
+            if (!chatInput || !chatMessages) {
+                initializeElements();
+            }
+
+            const message = chatInput ? chatInput.value.trim() : '';
+            if (!message) return;
+
+            addUserMessage(message);
+            if (chatInput) {
+                chatInput.value = '';
+            }
+            showTypingIndicator();
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message })
+                });
+
+                const data = await response.json();
+                hideTypingIndicator();
+
+                if (data.reply) {
+                    addBotMessage(data.reply);
+                } else {
+                    addBotMessage("I apologize, but I'm having trouble processing your request. Please try again.");
+                }
+            } catch (error) {
+                hideTypingIndicator();
+                // Mock response for testing since backend isn't set up
+                addBotMessage(`I received your message: "${message}". Backend connection not available - this is a mock response.`);
+                console.error('Error:', error);
+            }
+        }
+
+        // UI Helper Functions
+        function addUserMessage(message) {
+            if (!chatMessages) {
+                console.error('chat-messages not available');
+                return;
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message user';
+            messageDiv.innerHTML = `
             <div class="message-avatar">U</div>
             <div class="message-content">${escapeHtml(message)}</div>
         `;
-        chatMessages.appendChild(messageDiv);
-        scrollToBottom();
-    }
-
-    function addBotMessage(message) {
-        if (!chatMessages) {
-            console.error('chat-messages not available');
-            return;
+            chatMessages.appendChild(messageDiv);
+            scrollToBottom();
         }
-        
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'message bot';
-        messageDiv.innerHTML = `
+
+        function addBotMessage(message) {
+            if (!chatMessages) {
+                console.error('chat-messages not available');
+                return;
+            }
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message bot';
+            messageDiv.innerHTML = `
             <div class="message-avatar">AI</div>
             <div class="message-content">${formatMessage(message)}</div>
         `;
-        chatMessages.appendChild(messageDiv);
-        scrollToBottom();
-    }
+            chatMessages.appendChild(messageDiv);
+            scrollToBottom();
+        }
 
-    function showTypingIndicator() {
-        if (!chatMessages) return;
-        
-        const indicator = document.createElement('div');
-        indicator.className = 'message bot';
-        indicator.id = 'typing-indicator';
-        indicator.innerHTML = `
+        function showTypingIndicator() {
+            if (!chatMessages) return;
+
+            const indicator = document.createElement('div');
+            indicator.className = 'message bot';
+            indicator.id = 'typing-indicator';
+            indicator.innerHTML = `
             <div class="message-avatar">AI</div>
             <div class="typing-indicator">
                 <span></span>
@@ -766,66 +766,84 @@
                 <span></span>
             </div>
         `;
-        chatMessages.appendChild(indicator);
-        scrollToBottom();
-    }
-
-    function hideTypingIndicator() {
-        const indicator = document.getElementById('typing-indicator');
-        if (indicator) {
-            indicator.remove();
+            chatMessages.appendChild(indicator);
+            scrollToBottom();
         }
-    }
 
-    function scrollToBottom() {
-        if (chatMessages) {
-            chatMessages.scrollTop = chatMessages.scrollHeight;
+        function hideTypingIndicator() {
+            const indicator = document.getElementById('typing-indicator');
+            if (indicator) {
+                indicator.remove();
+            }
         }
-    }
 
-    function escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    }
-
-    function formatMessage(text) {
-        // Convert line breaks to HTML
-        return escapeHtml(text).replace(/\n/g, '<br>');
-    }
-
-    // File Upload Functions
-    function handleFileUpload(event) {
-        const file = event.target.files[0];
-        if (file) {
-            uploadedFile = file;
-            alert(`✓ File "${file.name}" uploaded successfully!`);
+        function scrollToBottom() {
+            if (chatMessages) {
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
         }
-    }
 
-    function analyzeMedicalImage() {
-        const resultDiv = document.getElementById('analysis-result');
-        if (uploadedFile) {
-            resultDiv.style.display = 'block';
-            alert('📊 Analysis feature is under development. The ML model will be integrated soon!');
-        } else {
-            alert('⚠ Please upload an image first!');
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
-    }
 
-    // Initialize when DOM is fully loaded
-    document.addEventListener('DOMContentLoaded', function() {
-        initializeElements();
-        console.log('OncoChat AI initialized successfully');
-        
-        // Additional safety: re-initialize after a short delay
-        setTimeout(initializeElements, 500);
-    });
+        function formatMessage(text) {
+    // First escape HTML to prevent XSS
+    let formatted = escapeHtml(text);
+    
+    // Convert markdown-style formatting to HTML
+    // Bold: **text** or __text__
+    formatted = formatted.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    formatted = formatted.replace(/__(.+?)__/g, '<strong>$1</strong>');
+    
+    // Italic: *text* or _text_ (single asterisk/underscore)
+    formatted = formatted.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    formatted = formatted.replace(/_(.+?)_/g, '<em>$1</em>');
+    
+    // Bullet points: * item or - item
+    formatted = formatted.replace(/^\* (.+)$/gm, '• $1');
+    formatted = formatted.replace(/^- (.+)$/gm, '• $1');
+    
+    // Line breaks
+    formatted = formatted.replace(/\n/g, '<br>');
+    
+    return formatted;
+}
 
-    // Also initialize if user goes directly to chat page
-    window.addEventListener('load', function() {
-        initializeElements();
-    });
+        // File Upload Functions
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                uploadedFile = file;
+                alert(`✓ File "${file.name}" uploaded successfully!`);
+            }
+        }
+
+        function analyzeMedicalImage() {
+            const resultDiv = document.getElementById('analysis-result');
+            if (uploadedFile) {
+                resultDiv.style.display = 'block';
+                alert('📊 Analysis feature is under development. The ML model will be integrated soon!');
+            } else {
+                alert('⚠ Please upload an image first!');
+            }
+        }
+
+        // Initialize when DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', function () {
+            initializeElements();
+            console.log('OncoChat AI initialized successfully');
+
+            // Additional safety: re-initialize after a short delay
+            setTimeout(initializeElements, 500);
+        });
+
+        // Also initialize if user goes directly to chat page
+        window.addEventListener('load', function () {
+            initializeElements();
+        });
     </script>
 
 </head>
@@ -850,6 +868,7 @@
             <h1>Welcome to OncoChat AI</h1>
             <p>Your AI-Powered Cancer Care Assistant - Supporting You Every Step of the Way</p>
             <button class="hero-btn" onclick="showPage('chat')">Start Chatting Now</button>
+            <button class="hero-btn" onclick="showPage('diagnosis')">Diagnosis</button>
         </section>
 
         <section class="features-section">
@@ -911,7 +930,12 @@
                 <div class="message bot">
                     <div class="message-avatar">AI</div>
                     <div class="message-content">
-                        Hello! I'm OncoChat AI, your cancer care assistant. I'm here to provide information and support.
+                        <strong>Hello! I'm OncoChat AI, your cancer care assistant.</strong><br><br>
+                        I'm here to provide information and support about cancer care, treatments, side effects
+                        management, nutrition, and emotional support.<br><br>
+                        <em>Important: I am a support tool and not a replacement for professional medical advice. Please
+                            consult with your healthcare team for personalized guidance and treatment decisions. For
+                            emergencies, seek immediate medical attention.</em><br><br>
                         How can I help you today?
                     </div>
                 </div>
