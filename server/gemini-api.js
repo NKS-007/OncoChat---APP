@@ -6,6 +6,33 @@ const router = express.Router();
 // Initialize Gemini AI
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+// Store conversation history per session (in memory for now, consider Redis/DB for production)
+const conversationHistories = new Map();
+
+// Cleanup old sessions every hour (to prevent memory leaks)
+setInterval(() => {
+  const oneHourAgo = Date.now() - (60 * 60 * 1000);
+  for (const [sessionId, data] of conversationHistories.entries()) {
+    if (data.lastAccessed < oneHourAgo) {
+      conversationHistories.delete(sessionId);
+      console.log(`🗑️ Cleaned up old session: ${sessionId}`);
+    }
+  }
+}, 60 * 60 * 1000); // Run every hour
+
+// Helper function to get/create session data
+function getSessionData(sessionId) {
+  if (!conversationHistories.has(sessionId)) {
+    conversationHistories.set(sessionId, {
+      history: [],
+      lastAccessed: Date.now()
+    });
+  }
+  const data = conversationHistories.get(sessionId);
+  data.lastAccessed = Date.now(); // Update last access time
+  return data;
+}
+
 // EXPANDED Hardcoded responses for common queries
 const hardcodedResponses = {
   'hi': "Hello! 👋 I'm OncoChat AI, your compassionate cancer care companion. I'm here to provide support, answer your questions, and help you navigate your cancer journey. How can I assist you today?",
@@ -38,19 +65,30 @@ function getHardcodedResponse(message) {
 
 router.post('/chat', async (req, res) => {
   try {
-    const { message } = req.body;
+    const { message, sessionId = 'default' } = req.body;
 
     if (!message) {
       return res.status(400).json({ error: 'Message is required' });
     }
 
     console.log('📨 Received message:', message);
+    console.log('🆔 Session ID:', sessionId);
 
-    // Check for hardcoded response first
-    const hardcoded = getHardcodedResponse(message);
-    if (hardcoded) {
-      console.log('✅ Using hardcoded response');
-      return res.json({ reply: hardcoded });
+    // Get or create conversation history for this session
+    const sessionData = getSessionData(sessionId);
+    const conversationHistory = sessionData.history;
+
+    // Check for hardcoded response first (only for first message or simple greetings)
+    if (conversationHistory.length === 0) {
+      const hardcoded = getHardcodedResponse(message);
+      if (hardcoded) {
+        console.log('✅ Using hardcoded response');
+        conversationHistory.push(
+          { role: 'user', parts: [{ text: message }] },
+          { role: 'model', parts: [{ text: hardcoded }] }
+        );
+        return res.json({ reply: hardcoded });
+      }
     }
 
     // Try Gemini API if available
@@ -61,7 +99,6 @@ router.post('/chat', async (req, res) => {
     }
 
     // Try to use Gemini with multiple model fallbacks
-    // gemini-2.0-flash is confirmed working
     const modelsToTry = [
       'gemini-2.0-flash',
       'gemini-1.5-flash',
@@ -83,47 +120,51 @@ router.post('/chat', async (req, res) => {
           }
         });
         
-        const systemPrompt = `You are OncoChat AI, a specialized cancer care support assistant. Your role is to provide accurate, compassionate, and evidence-based information exclusively about cancer and related health topics.
-
-**SCOPE - You ONLY discuss:**
-- Cancer types, stages, and diagnosis
-- Cancer treatments (chemotherapy, radiation, immunotherapy, surgery, targeted therapy)
-- Side effects management and supportive care
-- Nutrition and lifestyle during cancer treatment
-- Mental health and emotional support for patients and caregivers
-- Medical terminology explanations related to oncology
-- General health topics directly related to cancer care
-- Resources and support systems for cancer patients
-
-**STRICT BOUNDARIES - You DO NOT discuss:**
-- Non-cancer medical conditions (unless directly related to cancer care)
-- Non-medical topics (politics, entertainment, general conversation, etc.)
-- Financial or legal advice
-- Specific medical diagnoses or treatment recommendations
-- Alternative therapies that lack scientific evidence
-
-**YOUR COMMUNICATION STYLE:**
-- Professional yet warm and empathetic
-- Use clear, jargon-free language (explain medical terms when used)
-- Be concise but thorough
-- Show compassion while maintaining medical accuracy
-- Always encourage consultation with healthcare professionals for personalized advice
-
-**CRITICAL DISCLAIMERS:**
-- Always remind users that you are not a replacement for professional medical advice
-- For urgent symptoms or emergencies, direct users to seek immediate medical attention
-- Encourage users to discuss all treatment decisions with their oncology team
-
-**If asked about non-cancer/non-medical topics:**
-Politely redirect: "I'm specifically designed to assist with cancer care and related health topics. For questions about [topic], I'd recommend seeking appropriate resources. Is there anything related to cancer care I can help you with?"
-
-**User's question:** ${message}
-
-Provide a helpful, accurate, and compassionate response within your scope.`;
+        // Build the conversation with system instructions at the start
+        let fullHistory = [];
         
-        const result = await model.generateContent(systemPrompt);
+        // If this is a new conversation, add system instructions
+        if (conversationHistory.length === 0) {
+          fullHistory = [
+            {
+              role: 'user',
+              parts: [{ text: 'Please confirm you understand your role and limitations.' }]
+            },
+            {
+              role: 'model',
+              parts: [{ text: 'I understand. I am OncoChat AI, a specialized cancer care support assistant. I will ONLY discuss cancer and related health topics including: cancer types, stages, diagnosis, treatments (chemotherapy, radiation, immunotherapy, surgery, targeted therapy), side effects management, nutrition, lifestyle during treatment, mental health support for patients and caregivers, and medical terminology related to oncology.\n\nI will NOT discuss: non-cancer medical conditions (unless directly related to cancer care), non-medical topics (politics, entertainment, general conversation, poems, stories, etc.), financial or legal advice, or provide specific medical diagnoses.\n\nIf asked about non-cancer topics, I will politely redirect users back to cancer care topics. I will be professional, warm, empathetic, and use clear language while formatting responses with markdown (bold for emphasis, bullet points for lists).\n\nI will only include medical disclaimers when discussing specific medical advice, treatment decisions, or emergency situations - not in general educational responses or follow-up questions.' }]
+            }
+          ];
+        }
+        
+        // Add conversation history
+        fullHistory = [...fullHistory, ...conversationHistory];
+        
+        // Create the prompt that reinforces instructions for every message
+        const enhancedMessage = `Remember: You are OncoChat AI. You ONLY discuss cancer and related health topics. If this question is about non-cancer/non-medical topics, politely redirect.
+
+User question: ${message}`;
+        
+        // Start chat with full history
+        const chat = model.startChat({
+          history: fullHistory,
+        });
+        
+        console.log(`💬 Sending message with ${fullHistory.length} previous messages...`);
+        const result = await chat.sendMessage(enhancedMessage);
         const response = await result.response;
         const reply = response.text();
+
+        // Add to conversation history (store the original message, not the enhanced one)
+        conversationHistory.push(
+          { role: 'user', parts: [{ text: message }] },
+          { role: 'model', parts: [{ text: reply }] }
+        );
+
+        // Keep only last 20 messages (10 exchanges) to prevent token overflow
+        if (conversationHistory.length > 20) {
+          conversationHistory.splice(0, conversationHistory.length - 20);
+        }
 
         console.log(`✅ Success with model: ${modelName}`);
         return res.json({ reply });
@@ -131,7 +172,7 @@ Provide a helpful, accurate, and compassionate response within your scope.`;
       } catch (modelError) {
         console.log(`❌ Model ${modelName} failed:`, modelError.message);
         lastError = modelError;
-        continue; // Try next model
+        continue;
       }
     }
 
@@ -210,6 +251,50 @@ router.get('/test-models', async (req, res) => {
     res.json({ results });
   } catch (error) {
     res.json({ error: error.message });
+  }
+});
+
+// Get conversation history endpoint
+router.post('/get-history', (req, res) => {
+  try {
+    const { sessionId = 'default' } = req.body;
+    
+    const sessionData = getSessionData(sessionId);
+    const history = sessionData.history;
+    
+    // Convert history to user-friendly format
+    const messages = [];
+    for (let i = 0; i < history.length; i++) {
+      const msg = history[i];
+      // Skip the system instruction messages
+      if (i < 2 && msg.parts[0].text.includes('confirm you understand your role')) {
+        continue;
+      }
+      messages.push({
+        role: msg.role === 'user' ? 'user' : 'bot',
+        content: msg.parts[0].text
+      });
+    }
+    
+    res.json({ success: true, messages });
+  } catch (error) {
+    res.json({ success: false, error: error.message });
+  }
+});
+
+// Clear conversation history endpoint
+router.post('/clear-history', (req, res) => {
+  try {
+    const { sessionId = 'default' } = req.body;
+    
+    if (conversationHistories.has(sessionId)) {
+      conversationHistories.delete(sessionId);
+      console.log(`🗑️ Cleared history for session: ${sessionId}`);
+    }
+    
+    res.json({ success: true, message: 'Conversation history cleared' });
+  } catch (error) {
+    res.json({ success: false, error: error.message });
   }
 });
 

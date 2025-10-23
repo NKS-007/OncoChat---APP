@@ -598,7 +598,140 @@
         let chatMessages = null;
         let chatInput = null;
         let uploadedFile = null;
+        let sessionId = localStorage.getItem('oncochat_session_id');
+        if (!sessionId) {
+            sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('oncochat_session_id', sessionId);
+        }
 
+
+
+
+
+        async function clearChat() {
+    if (!confirm('Are you sure you want to clear the chat history? This cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/clear-history', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ sessionId })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Clear the UI
+            if (chatMessages) {
+                chatMessages.innerHTML = `
+                    <div class="message bot">
+                        <div class="message-avatar">AI</div>
+                        <div class="message-content">
+                            <strong>Hello! I'm OncoChat AI, your cancer care assistant.</strong><br><br>
+                            I'm here to provide information and support about cancer care, treatments, side effects management, nutrition, and emotional support.<br><br>
+                            <em>Important: I am a support tool and not a replacement for professional medical advice. Please consult with your healthcare team for personalized guidance and treatment decisions. For emergencies, seek immediate medical attention.</em><br><br>
+                            How can I help you today?
+                        </div>
+                    </div>
+                `;
+            }
+            console.log('✅ Chat history cleared');
+        }
+    } catch (error) {
+        console.error('Failed to clear history:', error);
+        alert('Failed to clear chat history. Please try again.');
+    }
+}
+
+        // Generate or get session ID
+        // Load conversation history when page loads
+        async function loadConversationHistory() {
+            try {
+                const response = await fetch('/api/get-history', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ sessionId })
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.messages && data.messages.length > 0) {
+                    console.log('📚 Loading', data.messages.length, 'messages from history');
+
+                    // Clear the welcome message
+                    if (chatMessages) {
+                        chatMessages.innerHTML = '';
+                    }
+
+                    // Add all messages from history
+                    data.messages.forEach(msg => {
+                        if (msg.role === 'user') {
+                            addUserMessage(msg.content);
+                        } else {
+                            addBotMessage(msg.content);
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to load history:', error);
+            }
+        }
+
+        // Initialize when DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', function () {
+            initializeElements();
+            console.log('OncoChat AI initialized successfully');
+
+            // Additional safety: re-initialize after a short delay
+            setTimeout(initializeElements, 500);
+        });
+
+        // Load history when switching to chat page
+        function showPage(pageName) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+
+            // Remove active class from all nav links
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+
+            // Show selected page
+            document.getElementById(pageName + '-page').classList.add('active');
+
+            // Add active class to clicked nav link
+            event.target.classList.add('active');
+
+            // Scroll to top
+            window.scrollTo(0, 0);
+
+            // Re-initialize elements when switching to chat page
+            if (pageName === 'chat') {
+                setTimeout(() => {
+                    initializeElements();
+                    loadConversationHistory(); // Load history when entering chat page
+                }, 100);
+            }
+        }
+
+        // Also load history on page load if already on chat page
+        window.addEventListener('load', function () {
+            initializeElements();
+
+            // Check if we're on the chat page
+            const chatPage = document.getElementById('chat-page');
+            if (chatPage && chatPage.classList.contains('active')) {
+                setTimeout(loadConversationHistory, 500);
+            }
+        });
         // Initialize DOM elements when page loads
         function initializeElements() {
             chatMessages = document.getElementById('chat-messages');
@@ -679,6 +812,9 @@
         }
 
         // Chat Functions
+
+
+
         async function sendMessage() {
             // Ensure elements are available
             if (!chatInput || !chatMessages) {
@@ -695,27 +831,36 @@
             showTypingIndicator();
 
             try {
+                console.log('Sending message:', message);
+                console.log('Session ID:', sessionId);
+
                 const response = await fetch('/api/chat', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ message })
+                    body: JSON.stringify({
+                        message,
+                        sessionId
+                    })
                 });
 
+                console.log('Response status:', response.status);
                 const data = await response.json();
+                console.log('Response data:', data);
+
                 hideTypingIndicator();
 
                 if (data.reply) {
                     addBotMessage(data.reply);
                 } else {
+                    console.error('No reply in response:', data);
                     addBotMessage("I apologize, but I'm having trouble processing your request. Please try again.");
                 }
             } catch (error) {
+                console.error('Fetch error:', error);
                 hideTypingIndicator();
-                // Mock response for testing since backend isn't set up
-                addBotMessage(`I received your message: "${message}". Backend connection not available - this is a mock response.`);
-                console.error('Error:', error);
+                addBotMessage("I'm having connection issues. Please check your internet and try again.");
             }
         }
 
@@ -790,27 +935,27 @@
         }
 
         function formatMessage(text) {
-    // First escape HTML to prevent XSS
-    let formatted = escapeHtml(text);
-    
-    // Convert markdown-style formatting to HTML
-    // Bold: **text** or __text__
-    formatted = formatted.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-    formatted = formatted.replace(/__(.+?)__/g, '<strong>$1</strong>');
-    
-    // Italic: *text* or _text_ (single asterisk/underscore)
-    formatted = formatted.replace(/\*(.+?)\*/g, '<em>$1</em>');
-    formatted = formatted.replace(/_(.+?)_/g, '<em>$1</em>');
-    
-    // Bullet points: * item or - item
-    formatted = formatted.replace(/^\* (.+)$/gm, '• $1');
-    formatted = formatted.replace(/^- (.+)$/gm, '• $1');
-    
-    // Line breaks
-    formatted = formatted.replace(/\n/g, '<br>');
-    
-    return formatted;
-}
+            // First escape HTML to prevent XSS
+            let formatted = escapeHtml(text);
+
+            // Convert markdown-style formatting to HTML
+            // Bold: **text** or __text__
+            formatted = formatted.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            formatted = formatted.replace(/__(.+?)__/g, '<strong>$1</strong>');
+
+            // Italic: *text* or _text_ (single asterisk/underscore)
+            formatted = formatted.replace(/\*(.+?)\*/g, '<em>$1</em>');
+            formatted = formatted.replace(/_(.+?)_/g, '<em>$1</em>');
+
+            // Bullet points: * item or - item
+            formatted = formatted.replace(/^\* (.+)$/gm, '• $1');
+            formatted = formatted.replace(/^- (.+)$/gm, '• $1');
+
+            // Line breaks
+            formatted = formatted.replace(/\n/g, '<br>');
+
+            return formatted;
+        }
 
         // File Upload Functions
         function handleFileUpload(event) {
@@ -925,6 +1070,10 @@
         <div class="chat-container">
             <div class="chat-header">
                 💬 Chat with OncoChat AI
+                <button onclick="clearChat()"
+                    style="background: rgba(255,255,255,0.2); color: white; border: none; padding: 8px 16px; border-radius: 15px; cursor: pointer; font-size: 14px; margin-left: 24rem;">
+                    🗑️ Clear Chat
+                </button>
             </div>
             <div class="chat-messages" id="chat-messages">
                 <div class="message bot">
