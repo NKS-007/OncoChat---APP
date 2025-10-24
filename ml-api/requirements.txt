@@ -1,4 +1,12 @@
-fastapi==0.104.1
-uvicorn==0.24.0
-python-multipart==0.0.6
-# Add your ML dependencies here (TensorFlow, PyTorch, etc.)
+fastapi
+uvicorn
+torch
+torchvision
+pillow
+numpy
+pydicom
+requests
+tqdm
+matplotlib
+scikit-learn
+httpx
